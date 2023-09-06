@@ -1,5 +1,7 @@
 package IntList;
 
+import org.junit.Test;
+
 public class Primes {
 
     /**
