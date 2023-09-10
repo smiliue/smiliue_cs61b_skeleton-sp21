@@ -5,7 +5,7 @@ import java.util.Observable;
 
 
 /** The state of a game of 2048.
- *  @author TODO: YOUR NAME HERE
+ *  @author smiliue liu
  */
 public class Model extends Observable {
     /** Current contents of the board. */
@@ -94,6 +94,52 @@ public class Model extends Observable {
         setChanged();
     }
 
+
+    // variant: first and others
+    // 平面直角坐标系
+    // col: x轴
+    // row: y轴
+    // (col, row)
+    public boolean moveOneRow(int col)
+    {
+        int size = board.size();
+        int row = size - 1;
+        int nextFreePos = size - 1;
+        boolean hasMerged = true;   // A flag of the most recent has-move tile.
+        boolean board_changed = false;
+
+        while(row != -1)
+        {
+            // Find the next valid tile.
+            for(;row>=0;row--)
+            {
+                if(board.tile(col, row)!=null)
+                    break;
+            }
+            if(row == -1)
+                break;
+
+            // Move specify tile to the front.
+            // Thinking: Could it be merged with the front ones?
+            // 1. nextFreePos+1 if hasMerged == false and satisfy the command of merge
+            // 2. nextFreePos for other situations
+            if(!hasMerged &&
+                    board.tile(col, nextFreePos+1).value() == board.tile(col, row).value()) {
+                hasMerged = board.move(col, nextFreePos+1, board.tile(col, row));
+                score += board.tile(col, nextFreePos+1).value();
+                board_changed = true;
+            }else {
+                hasMerged = board.move(col, nextFreePos, board.tile(col, row));
+                if(nextFreePos != row)
+                    board_changed = true;
+                nextFreePos -= 1;
+                row -= 1;
+            }
+        }
+
+        return board_changed;
+    }
+
     /** Tilt the board toward SIDE. Return true iff this changes the board.
      *
      * 1. If two Tile objects are adjacent in the direction of motion and have
@@ -113,6 +159,12 @@ public class Model extends Observable {
         // TODO: Modify this.board (and perhaps this.score) to account
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
+        board.setViewingPerspective(side);
+        int size = board.size();
+        for(int i=0;i<size;i++)
+            if(moveOneRow(i))
+                changed = true;
+        board.setViewingPerspective(Side.NORTH);
 
         checkGameOver();
         if (changed) {
@@ -138,6 +190,14 @@ public class Model extends Observable {
      * */
     public static boolean emptySpaceExists(Board b) {
         // TODO: Fill in this function.
+        int size = b.size();
+        for(int i=0;i<size;i++)
+            for(int j=0;j<size;j++)
+            {
+                if(b.tile(i,j) == null)
+                    return true;
+            }
+
         return false;
     }
 
@@ -148,6 +208,13 @@ public class Model extends Observable {
      */
     public static boolean maxTileExists(Board b) {
         // TODO: Fill in this function.
+        int size = b.size();
+        for(int i=0;i<size;i++)
+            for(int j=0;j<size;j++)
+            {
+                if(b.tile(i,j)!=null && b.tile(i,j).value()==MAX_PIECE)
+                    return true;
+            }
         return false;
     }
 
@@ -159,6 +226,26 @@ public class Model extends Observable {
      */
     public static boolean atLeastOneMoveExists(Board b) {
         // TODO: Fill in this function.
+        // situation1:
+        if(emptySpaceExists(b))
+            return true;
+
+        // situation2:
+        int size = b.size();
+        for(int i=0;i<size;i++)
+            for (int j=0;j<size;j++)
+            {
+                if(j-1>0 && b.tile(i, j-1).value() == b.tile(i,j).value())
+                    return true;
+                if(j+1<size && b.tile(i, j+1).value() == b.tile(i,j).value())
+                    return true;
+                if(i-1>0 && b.tile(i-1, j).value() == b.tile(i,j).value())
+                    return true;
+                if(i+1<size && b.tile(i+1, j).value() == b.tile(i,j).value())
+                    return true;
+            }
+
+        // situation3:
         return false;
     }
 
